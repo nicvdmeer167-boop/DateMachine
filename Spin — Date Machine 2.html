@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spin — pick tonight's date</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#2E1A3D; --plum-2:#42264F; --ink:#241227; --cream:#FFF8ED; --cream-2:#FBEFDA;
+  --marigold:#F2A93B; --coral:#E4694A; --sage:#5C8B6E; --sky:#4B7FA6; --berry:#A23E5D;
+  --muted:#8A7A92; --line:#EDE1CF;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --cream:#211527; --cream-2:#2A1B32; --ink:#F6EEF9; --line:#3A2A45; --muted:#B6A7C0; }
+}
+:root[data-theme="dark"]{ --cream:#211527; --cream-2:#2A1B32; --ink:#F6EEF9; --line:#3A2A45; --muted:#B6A7C0; }
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%}
+body{margin:0;height:100%;background:var(--plum);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,.serif{font-family:'Fraunces',Georgia,serif}
+#app{max-width:520px;margin:0 auto;background:var(--cream);min-height:100%;position:relative;padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+.topbar{position:sticky;top:0;z-index:10;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 14px;background:var(--cream);display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:22px;margin:0;font-weight:600}
+.pill-btn{border:none;background:var(--cream-2);color:var(--ink);padding:8px 14px;border-radius:99px;font-weight:600;font-size:13px;cursor:pointer}
+.scr{padding:4px 20px 20px;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.hero{background:linear-gradient(160deg,var(--plum),var(--plum-2));border-radius:24px;padding:28px 22px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden}
+.hero h2{font-size:26px;margin:0 0 6px;font-weight:600;line-height:1.15}
+.hero p{margin:0 0 18px;color:#D9C9E0;font-size:14.5px}
+.spin-cta{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--marigold);color:var(--plum);border:none;width:100%;padding:16px;border-radius:16px;font-size:17px;font-weight:700;cursor:pointer;font-family:'Fraunces',serif}
+.spin-cta:active{transform:scale(.98)}
+.section-label{font-size:13px;color:var(--muted);margin:0 0 10px;font-weight:600}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.cat-card{border-radius:18px;padding:16px 14px;cursor:pointer;border:1px solid var(--line);background:var(--cream-2);transition:transform .15s}
+.cat-card:active{transform:scale(.97)}
+.cat-card .ic{font-size:22px}
+.cat-card b{display:block;font-family:'Fraunces',serif;font-size:16px;margin:6px 0 2px;font-weight:600}
+.cat-card span{font-size:12.5px;color:var(--muted)}
+.date-card{background:var(--cream-2);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;border-left:5px solid var(--coral)}
+.date-card h3{margin:0 0 4px;font-size:17px;font-weight:600}
+.date-card p{margin:0 0 10px;font-size:14px;color:var(--muted);line-height:1.4}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tag{font-size:11.5px;background:var(--cream);border:1px solid var(--line);padding:4px 9px;border-radius:99px;color:var(--ink)}
+.card-actions{display:flex;gap:8px}
+.act-btn{flex:1;border:none;background:var(--cream);border:1px solid var(--line);padding:10px;border-radius:12px;font-weight:600;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.act-btn.saved{background:var(--berry);color:#fff;border-color:var(--berry)}
+.act-btn.done{background:var(--sage);color:#fff;border-color:var(--sage)}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--cream);border-top:1px solid var(--line);display:flex;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));z-index:20}
+.navbtn{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);font-weight:600;cursor:pointer;padding:6px}
+.navbtn.active{color:var(--coral)}
+.navbtn .ic{font-size:20px}
+.detail-hero{border-radius:20px;padding:22px;background:var(--cream-2);margin-bottom:18px}
+.detail-hero h2{font-size:24px;margin:0 0 8px;font-weight:600}
+.detail-hero .meta{font-size:13px;color:var(--muted);margin-bottom:12px}
+.block{margin-bottom:20px}
+.block h4{font-size:13px;text-transform:none;color:var(--muted);margin:0 0 8px;font-weight:700}
+.block p, .block li{font-size:15px;line-height:1.55}
+.block ul{margin:0;padding-left:20px}
+.need-row{display:flex;flex-wrap:wrap;gap:8px}
+.need-chip{background:var(--cream-2);border:1px solid var(--line);padding:6px 12px;border-radius:99px;font-size:13px}
+.big-actions{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.big-btn{padding:15px;border-radius:14px;border:none;font-weight:700;font-size:15.5px;cursor:pointer;font-family:'Fraunces',serif}
+.primary{background:var(--marigold);color:var(--plum)}
+.secondary{background:var(--cream-2);color:var(--ink);border:1px solid var(--line)}
+.tabbar{display:flex;gap:8px;margin-bottom:16px}
+.tabbtn{flex:1;padding:10px;border-radius:12px;border:none;background:var(--cream-2);font-weight:600;font-size:13.5px;cursor:pointer;color:var(--muted)}
+.tabbtn.active{background:var(--plum);color:#fff}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:6px;font-family:'Fraunces',serif}
+.wheel-wrap{display:flex;flex-direction:column;align-items:center;padding:10px 0 20px}
+.wheel-outer{position:relative;width:280px;height:280px;margin:10px 0 24px}
+.wheel{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4.5s cubic-bezier(.12,.72,.14,1);box-shadow:0 10px 30px rgba(0,0,0,.25);border:6px solid var(--cream)}
+.wheel-seg-label{position:absolute;top:50%;left:50%;transform-origin:0 0;font-size:10.5px;font-weight:700;color:#fff;width:110px;text-align:right;padding-right:14px}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:26px;z-index:5}
+.filter-row{margin-bottom:16px}
+.filter-row .opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{padding:8px 13px;border-radius:99px;border:1px solid var(--line);background:var(--cream-2);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.opt.sel{background:var(--plum);color:#fff;border-color:var(--plum)}
+.result-title{font-size:28px;margin:14px 0 8px;font-weight:600}
+.search-box{width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:var(--cream-2);font-size:15px;margin-bottom:16px;font-family:inherit;color:var(--ink)}
+.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.insight-card{background:var(--cream-2);border-radius:16px;padding:14px}
+.insight-card .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.insight-card .val{font-family:'Fraunces',serif;font-size:18px;margin-top:4px}
+.stat-big{font-family:'Fraunces',serif;font-size:34px;margin:0 0 18px}
+.ai-badge{display:inline-block;font-size:10.5px;background:var(--sky);color:#fff;padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle}
+.mem-form textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;font-family:inherit;font-size:14px;min-height:70px;background:var(--cream-2);color:var(--ink)}
+.hearts{display:flex;gap:6px;margin:10px 0;font-size:26px}
+.hearts span{cursor:pointer;opacity:.35}
+.hearts span.on{opacity:1}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--plum);color:#fff;padding:11px 20px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:40;opacity:0;transition:opacity .25s}
+.toast.show{opacity:1}
+.back-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.back-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- DATA MODEL ---------- */
+const CATS = {
+  afterwork:{label:'After Work', ic:'🌙', desc:"Easy dates for a weekday evening.", color:'#4B7FA6'},
+  indoors:{label:'Indoors', ic:'🏠', desc:"For cold, rainy or lazy days.", color:'#A23E5D'},
+  outdoors:{label:'Outdoors', ic:'🌲', desc:"Get outside and do something together.", color:'#5C8B6E'},
+  weekend:{label:'Weekend', ic:'☀️', desc:"Longer dates and full-day adventures.", color:'#E4694A'},
+  holiday:{label:'Holiday', ic:'🎄', desc:"Christmas and seasonal dates.", color:'#8A5FBE'},
+  budget:{label:'Budget', ic:'💸', desc:"Free or almost-free dates.", color:'#F2A93B'},
+};
+const DUR_LABEL = {'30':'~30 min','1-2h':'1–2 hours','2-4h':'2–4 hours','half':'Half day','full':'Full day','over':'Overnight'};
+
+// t=title d=short cat=[] loc=home/out/mixed dur budget season diff how tips need
+const SEED = [
+["Pizza Roulette","Order a pizza for each other without telling the other person what you chose.",['afterwork','indoors'],'home','1-2h','€€','all','easy',"Each person secretly picks a pizza and orders it without showing the other. Reveal together and score each pie.","Add a bottle of wine · Put phones away","Pizza,Drinks"],
+["Movie Roulette","Each person secretly picks three movies, then a randomizer decides what you watch.",['afterwork','indoors','budget'],'home','2-4h','free','all','easy',"Write six titles on paper, fold them, and draw one. No re-picks allowed.","Make it a double feature","Streaming service,Snacks"],
+["Blind Cocktail Battle","Each of you mixes a drink for the other using only what's in the house.",['afterwork','indoors'],'home','1-2h','€','all','medium',"Set a 10-minute timer, hide your ingredients, swap glasses, and rate each other's creation.","Award a silly trophy for the winner","Spirits,Mixers,Ice"],
+["Board Game Evening","Pick a game neither of you has played and learn it together.",['afterwork','indoors','budget'],'home','1-2h','free','all','easy',"Read the rules aloud together, keep score, loser picks next week's game.","Play best of three","A board game"],
+["Evening Walk + Hot Chocolate","A slow loop around the neighborhood, ending with something warm.",['afterwork','outdoors','budget'],'out','1-2h','€','autumn','easy',"Take a new route you haven't walked before and grab hot chocolate somewhere on the way back.","Pick a street you've never walked down","Comfortable shoes"],
+["Blind Tasting","Blindfold each other and guess snacks, drinks or spices.",['afterwork','indoors','budget'],'home','30','free','all','easy',"One person closes their eyes, the other feeds them five mystery items to guess.","Keep score across rounds","Blindfold,Snacks"],
+["Playlist Battle","Each person builds a 5-song playlist that tells the other something about their week.",['afterwork','indoors','budget'],'home','30','free','all','easy',"Take turns playing a song and explaining why you picked it.","Guess the theme before it's revealed","Speaker"],
+["Home Restaurant Night","Turn your kitchen table into a pop-up restaurant with a menu and dress code.",['indoors'],'home','2-4h','€€','all','medium',"One of you cooks, the other 'orders' from a handwritten menu and leaves a tip.","Print a tiny menu card","Ingredients,Candles"],
+["Paint Night","Grab canvases and paints and recreate the same reference photo separately.",['indoors'],'home','1-2h','€','all','medium',"Pick one photo, paint your own version side by side, then compare results.","No peeking until both are done","Canvas,Paint,Brushes"],
+["DIY Sushi Night","Make sushi rolls from scratch and invent your own combos.",['indoors','weekend'],'home','2-4h','€€','all','medium',"Prep rice and fillings, then each design three original rolls and taste-test.","Rate each other's rolls out of 10","Nori,Rice,Fillings"],
+["LEGO Date","Build something together from a set — or freestyle with old bricks.",['indoors','budget'],'home','1-2h','free','all','easy',"Split a set in half or freestyle a joint build with a 45-minute timer.","Give it a name when it's done","LEGO set"],
+["Indoor Picnic","Blanket, snacks and fairy lights on the living room floor.",['indoors','budget'],'home','1-2h','€','winter','easy',"Lay a blanket, dim the lights, and eat everything with your hands.","Use whatever's already in the fridge","Blanket,Snacks"],
+["Mini DIY Project","Pick a small home project you've been putting off and finish it together.",['indoors'],'home','2-4h','€','all','medium',"Choose one drawer, shelf or wall you've been avoiding and tackle it as a team.","Play music while you work","Tools,Supplies"],
+["Sunset Walk","Chase the golden hour to a spot with a view.",['outdoors','budget'],'out','1-2h','free','all','easy',"Check sunset time, pick a spot with a horizon, and just watch it happen.","Bring a thermos","Comfortable shoes"],
+["Sunset Picnic","Pack a light dinner and eat it somewhere with a view as the sun goes down.",['outdoors','weekend','budget'],'out','1-2h','€','summer','easy',"Pack food that travels well, arrive 30 minutes before sunset, claim your spot.","Bring a blanket and bug spray","Picnic basket,Blanket"],
+["Photography Walk","Wander with a camera or phone and each shoot your own version of the same walk.",['outdoors','budget'],'out','1-2h','free','all','easy',"Walk the same route, shoot separately, then compare your ten best shots.","Give each other one creative constraint","Camera or phone"],
+["Mini Golf","A classic that always ends in friendly trash talk.",['outdoors','afterwork'],'out','1-2h','€€','all','easy',"Play a full round and keep score honestly — no do-overs.","Loser buys ice cream","None"],
+["Bouldering Session","Try an indoor climbing gym, even as total beginners.",['outdoors','indoors','afterwork'],'mixed','1-2h','€€','all','adventurous',"Book a beginner slot, warm up together, and try to top the same easy route.","Cheer each other on out loud","Climbing shoes (rentable)"],
+["Canoe or Kayak Trip","Rent a boat for an hour and paddle somewhere new.",['outdoors','weekend'],'out','1-2h','€€','summer','adventurous',"Rent from a local spot, pick a direction, and paddle until you feel like turning back.","Bring a dry bag for your phone","Life vest (usually provided)"],
+["Beach Walk","Barefoot walk along the shoreline, whatever the season.",['outdoors','budget'],'out','1-2h','free','all','easy',"Walk the tideline, collect one interesting thing each, and compare finds.","Do it in winter for extra drama","Warm layers"],
+["Stargazing Night","Drive somewhere dark and just look up.",['outdoors','budget'],'out','1-2h','free','all','easy',"Check a light-pollution map, bring blankets, and try to name one constellation.","Use a stargazing app to cheat a little","Blanket,Thermos"],
+["Road Trip Without a Destination","Pick a direction and just start driving.",['weekend'],'out','half','€€','all','medium',"Flip a coin for north/south/east/west, drive an hour, then decide together what's next.","Stop at the first weird sign you see","Car,Snacks"],
+["Day Trip to a Nearby Town","Pick a town neither of you has properly explored.",['weekend'],'mixed','half','€€','all','easy',"Research three things to see, leave room for wandering, and eat lunch locally.","Buy one souvenir each under €5","Comfortable shoes"],
+["Hotel Night In Your Own City","Book a cheap hotel nearby and treat it like a getaway.",['weekend'],'mixed','over','€€€','all','medium',"Check in, order room service, and don't check your phones after 8pm.","Steal the tiny toiletries","Overnight bag"],
+["Food Tour","Pick three food stops across town and rate each one.",['weekend'],'out','2-4h','€€','all','easy',"Pick a starter, main and dessert spot in different neighborhoods and walk between them.","Score each stop out of 10","Appetite"],
+["Hike + Packed Lunch","A proper trail, ending with sandwiches at the top.",['weekend','outdoors'],'out','half','€','all','medium',"Pick a trail with a view, pack lunch, and eat it at the highest point.","Bring more water than you think","Hiking shoes,Packed lunch"],
+["Tourist In Your Own City","Do everything a visitor would do, but where you live.",['weekend','budget'],'mixed','half','€','all','easy',"Pick three 'tourist trap' spots you've never actually visited and go.","Take a cheesy photo at each stop","Comfortable shoes"],
+["Train To an Unknown Stop","Get on a train and get off somewhere you've never been.",['weekend'],'mixed','half','€€','all','adventurous',"Pick a line, roll a die for how many stops, and explore wherever you land.","No googling the town beforehand","Train tickets"],
+["Christmas Market Wander","Mulled wine, stalls, and cold hands.",['holiday'],'out','1-2h','€€','christmas','easy',"Visit a local market, try one new stall each, and buy one small gift for each other.","Set a €10 gift budget each","Warm coat,Cash"],
+["Christmas Lights Walk","Drive or walk a route past the best-decorated houses nearby.",['holiday','budget'],'out','1-2h','free','christmas','easy',"Map a route past the most-decorated street in town and rate each house.","Bring hot chocolate in a thermos","Warm layers"],
+["Gingerbread House Challenge","Build separate gingerbread houses and judge each other's.",['holiday','indoors'],'home','1-2h','€','christmas','medium',"Split a kit or build from scratch, then judge each other's structural integrity.","Award categories like 'most creative'","Gingerbread kit"],
+["Christmas Movie Night","Rank your five favorite holiday films and watch the winner.",['holiday','indoors','budget'],'home','2-4h','free','christmas','easy',"Each nominate two films, vote, and watch the winner in pajamas.","Make popcorn with cinnamon sugar","Blankets,Snacks"],
+["Ice Skating","Wobble around a rink together.",['holiday','afterwork'],'out','1-2h','€€','winter','medium',"Rent skates, hold onto each other more than the rail, and try one lap unassisted.","Hot drink afterward is mandatory","Warm socks"],
+["Christmas Cocktail Night","Invent a themed drink for each other using seasonal ingredients.",['holiday','indoors'],'home','1-2h','€','christmas','medium',"Use cinnamon, orange peel or cranberry to build a themed drink and name it.","Give your drinks festive names","Spirits,Seasonal mixers"],
+["€10 Thrift Store Challenge","You each get €5 to find something for the other person.",['budget','indoors'],'mixed','1-2h','€','all','easy',"Split up in the shop, find something under €5 for the other, and reveal at the register.","Bonus points for the boldest choice","€5 each"],
+["Free Museum Afternoon","Find a museum with free entry and actually read the plaques.",['budget','indoors'],'mixed','1-2h','free','all','easy',"Pick a free museum, each choose one exhibit to explain to the other.","Pick each other's favorite piece","None"],
+["Bike Ride to Nowhere","Cycle until you feel like stopping, then turn around.",['budget','outdoors'],'out','1-2h','free','all','easy',"Ride out for 20 minutes in one direction, stop, then ride back a different way.","Race the last 200 meters","Bikes"],
+["Home Cinema Night","Rearrange the living room into a proper mini cinema.",['budget','indoors'],'home','2-4h','free','all','easy',"Move the couch, dim the lights, make real popcorn, and pick a double feature.","Sell each other 'tickets'","Blankets,Snacks"],
+["Pantry Picnic","A picnic built entirely from what's already at home.",['budget','indoors'],'home','30','free','all','easy',"Raid the pantry and fridge, plate it like a real spread, eat on the floor.","No trips to the shop allowed","Whatever's in the fridge"],
+["Dessert Date","Split three desserts from three different spots in one evening.",['afterwork'],'out','1-2h','€€','all','easy',"Order small portions across three stops and rank them at the end.","Save the best for last on purpose","Appetite for sugar"],
+["Sunset Photo Challenge","Take a walk during golden hour and give each other five photo challenges.",['outdoors','budget'],'out','1-2h','€','all','easy',"Write five odd photo prompts on paper before you leave, then complete them along the walk.","Judge each other's shots at the end","Camera or phone"],
+["Cook a Cuisine You've Never Tried","Pick a country neither of you has cooked from and attempt a full meal.",['indoors','weekend'],'home','2-4h','€€','all','medium',"Pick a cuisine, find one recipe each, and cook them side by side.","Set the table to match the theme","Ingredients"],
+["Silent Disco Cook-Off","Cook the same dish in silence with headphones on, communicating only by gesture.",['indoors'],'home','1-2h','€','all','medium',"Pick one recipe, wear headphones with different music, and cook it wordlessly.","Debrief afterward — what was the hardest part","Headphones,Ingredients"],
+["Two-Person Scavenger Hunt","Write five clues for each other around the house or neighborhood.",['budget','indoors','outdoors'],'mixed','1-2h','free','all','easy',"Hide five clues each leading to a small prize, then swap and solve.","End with a tiny reward, not a big one","Paper,Pen"],
+["Recreate Your First Date","Do a version of your very first date, wherever you are now.",['weekend'],'mixed','2-4h','€€','all','medium',"Revisit the theme of your first date — same food, similar activity, updated setting.","Compare notes on what's changed","Memory of your first date"],
+["Караoke at Home","Belt out your most embarrassing favorites with a phone app.",['indoors','afterwork','budget'],'home','1-2h','free','all','easy',"Use a free karaoke app, alternate songs, and score each other generously.","No judging the song choices","Phone,Speaker"],
+["Couples Puzzle Race","Split one puzzle in half and race to finish your side first.",['indoors','budget'],'home','1-2h','free','all','easy',"Divide a puzzle down the middle, race separately, first to finish wins bragging rights.","Winner picks the next date night","Jigsaw puzzle"],
+["Farmers Market Breakfast","An early wander through a local market followed by breakfast.",['weekend','budget'],'out','1-2h','€','all','easy',"Walk the stalls, each pick one unusual item to try, then find breakfast nearby.","Buy something you've never cooked with","Cash,Bag"],
+["Bake-Off","Pick one dessert and bake competing versions from scratch.",['indoors'],'home','2-4h','€','all','medium',"Agree on one dessert, bake separately in the same kitchen, blind taste-test the results.","Get a neutral judge if you have one","Baking ingredients"],
+["Rooftop or Balcony Night","Bring drinks and a blanket up somewhere with a view.",['outdoors','afterwork','budget'],'out','1-2h','€','summer','easy',"Find the highest accessible spot nearby, bring drinks, and just sit.","Bring a speaker for low music","Blanket,Drinks"],
+["Language Exchange Night","Teach each other ten phrases in a language neither of you speaks well.",['indoors','budget'],'home','1-2h','free','all','easy',"Pick a language, learn ten phrases from a video, and quiz each other after.","End the night only speaking the new language","Phone or laptop"],
+["Vintage Shop Dress-Up","Each pick a full outfit for the other under a small budget.",['budget','indoors'],'mixed','1-2h','€','all','easy',"Split up in a thrift store, build a full look for the other person, model them.","Take a photo of the final looks","€10-15 each"],
+["Astronomy App Night","Use a stargazing app to hunt for planets and satellites.",['outdoors','budget'],'out','1-2h','free','all','easy',"Lie somewhere flat and dark, open a stargazing app, and try to spot a planet.","Try to spot the ISS pass overhead","Phone with stargazing app"],
+["Couples Cooking Class","Book a local hands-on cooking class together.",['weekend'],'mixed','2-4h','€€€','all','medium',"Book a beginner class, split the tasks, and eat what you make.","Recreate the dish again at home later","Booking"],
+["Frisbee or Ball at the Park","No plan, just something to throw around.",['outdoors','budget'],'out','30','free','all','easy',"Grab any ball or frisbee and just play at the nearest park for half an hour.","Invent a silly scoring system","Frisbee or ball"],
+["Antique / Flea Market Hunt","Find one weird object each and explain why you'd buy it.",['weekend','budget'],'out','1-2h','€','all','easy',"Wander separately, each pick one strange item, and pitch why the other should let you buy it.","Actually buy the winning pitch","Cash"],
+["Escape Room","Book a room and see if you communicate well under pressure.",['weekend','afterwork'],'mixed','1-2h','€€€','all','medium',"Book a two-person-friendly room and split up the puzzle-solving roles early.","Agree on a signal for 'I'm stuck'","Booking"],
+["Dumpling Folding Night","Make dumplings from scratch and hold a folding competition.",['indoors','weekend'],'home','2-4h','€€','all','medium',"Prep filling and wrappers, then race to fold the neatest dumpling in five minutes.","Steam the losers' ugly ones first","Wrappers,Filling"],
+["New Year's Eve Time Capsule","Write letters to each other to open next New Year's.",['holiday'],'home','30','free','christmas','easy',"Each write a short letter about the year and predictions, seal it, open it next year.","Store it somewhere you won't forget","Paper,Envelope"],
+["Winter Soup Swap","Each make a soup from a different country and swap bowls.",['holiday','indoors'],'home','1-2h','€','winter','medium',"Pick different countries, cook simultaneously, and trade a bowl of each.","Rate the other's soup honestly","Ingredients"],
+];
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('datemachine_v1');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {dates:null, saved:[], planned:[], done:[], memories:{}, rejected:{}};
+}
+function saveState(){ try{ localStorage.setItem('datemachine_v1', JSON.stringify(STATE)); }catch(e){} }
+
+let STATE = loadState();
+if(!STATE.dates){
+  STATE.dates = SEED.map((s,i)=>({
+    id:'d'+i, t:s[0], d:s[1], cat:s[2], loc:s[3], dur:s[4], budget:s[5], season:s[6], diff:s[7],
+    how:s[8], tips:s[9], need:s[10], ai:false, timesDone:0, created:Date.now()
+  }));
+  saveState();
+}
+let VIEW = {screen:'home', dateId:null, category:null, tab:'saved'};
+
+function byId(id){ return STATE.dates.find(x=>x.id===id); }
+function isSaved(id){ return STATE.saved.includes(id); }
+function isPlanned(id){ return STATE.planned.some(p=>p.id===id); }
+function doneRecord(id){ return STATE.done.find(x=>x.id===id); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+
+/* ---------- AI-STYLE GENERATION (template combination, offline) ---------- */
+const TWISTS = [
+  d=>`Give each other three ${d.toLowerCase()}-themed challenges to complete before it's over.`,
+  d=>`Set a 20-minute timer and see who can make the most of it.`,
+  d=>`Do it with phones in a drawer the entire time.`,
+  d=>`Split a small budget and see who spends it better.`,
+  d=>`Add a scoring system and declare a winner at the end.`,
+];
+function generateDate(){
+  const pool = STATE.dates.filter(d=>!d.ai || d.timesDone===0);
+  const a = pool[Math.floor(Math.random()*pool.length)];
+  let b = pool[Math.floor(Math.random()*pool.length)];
+  let tries=0; while(b.id===a.id && tries<5){ b = pool[Math.floor(Math.random()*pool.length)]; tries++; }
+  const title = `${a.t.split(' ')[0]} × ${b.t.split(' ')[0]} Mashup`;
+  const already = STATE.dates.some(x=>x.t.toLowerCase()===title.toLowerCase());
+  if(already) return null;
+  const cats = [...new Set([...a.cat, ...b.cat])].slice(0,2);
+  const twist = TWISTS[Math.floor(Math.random()*TWISTS.length)](a.t);
+  const desc = `Combine ${a.t.toLowerCase()} with ${b.t.toLowerCase()}: ${twist}`;
+  const nd = {
+    id:'ai'+Date.now(), t:title, d:desc, cat:cats,
+    loc: a.loc===b.loc? a.loc : 'mixed', dur: a.dur, budget: a.budget,
+    season:'all', diff: a.diff==='adventurous'||b.diff==='adventurous'?'adventurous':'medium',
+    how: `Start with ${a.t.toLowerCase()}, then fold in the twist from ${b.t.toLowerCase()}: ${twist}`,
+    tips:"This one's a first-time mashup — tell us how it goes.",
+    need:[...(a.need||'').split(',').slice(0,2),...(b.need||'').split(',').slice(0,1)].filter(Boolean).join(','),
+    ai:true, timesDone:0, created:Date.now()
+  };
+  STATE.dates.push(nd); saveState();
+  return nd;
+}
+
+/* ---------- WEIGHTED CANDIDATE POOL ---------- */
+function weight(d){
+  let w = 10;
+  const rec = doneRecord(d.id);
+  if(rec){
+    const days = (Date.now()-rec.ts)/86400000;
+    w = days<14 ? 1 : days<60 ? 3 : 6;
+  }
+  const rej = STATE.rejected[d.id]||0;
+  w -= Math.min(rej, 4);
+  if(d.ai) w += 4;
+  return Math.max(w,0.5);
+}
+function buildPool(filters){
+  return STATE.dates.filter(d=>{
+    if(filters.cat && !d.cat.includes(filters.cat)) return false;
+    if(filters.dur && filters.dur!=='any' && d.dur!==filters.dur) return false;
+    if(filters.budget && filters.budget!=='any' && d.budget!==filters.budget) return false;
+    if(filters.loc && filters.loc!=='any'){
+      if(filters.loc==='home' && d.loc==='out') return false;
+      if(filters.loc==='out' && d.loc==='home') return false;
+    }
+    if(filters.status==='new' && doneRecord(d.id)) return false;
+    return true;
+  });
+}
+function weightedPick(pool){
+  const total = pool.reduce((s,d)=>s+weight(d),0);
+  let r = Math.random()*total;
+  for(const d of pool){ r -= weight(d); if(r<=0) return d; }
+  return pool[pool.length-1];
+}
+
+/* ---------- RENDER ---------- */
+const app = document.getElementById('app');
+function render(){
+  let html = '';
+  if(VIEW.screen==='home') html = renderHome();
+  else if(VIEW.screen==='category') html = renderCategory();
+  else if(VIEW.screen==='detail') html = renderDetail();
+  else if(VIEW.screen==='ourdates') html = renderOurDates();
+  else if(VIEW.screen==='roulette') html = renderRoulette();
+  else if(VIEW.screen==='search') html = renderSearch();
+  app.innerHTML = html + renderNav();
+  window.scrollTo(0,0);
+}
+
+function catChip(c){ return `<span class="tag">${CATS[c].ic} ${CATS[c].label}</span>`; }
+function budgetLabel(b){ return b==='free'?'Free':b; }
+
+function dateCardHtml(d){
+  const saved = isSaved(d.id);
+  const done = !!doneRecord(d.id);
+  return `<div class="date-card" onclick="openDetail('${d.id}')">
+    <h3>${d.t}${d.ai?'<span class="ai-badge">new mashup</span>':''}</h3>
+    <p>${d.d}</p>
+    <div class="tags">${d.cat.slice(0,2).map(catChip).join('')}<span class="tag">${budgetLabel(d.budget)}</span><span class="tag">${DUR_LABEL[d.dur]}</span></div>
+    <div class="card-actions">
+      <button class="act-btn ${saved?'saved':''}" onclick="event.stopPropagation();toggleSave('${d.id}')">${saved?'♥ Saved':'♡ Save'}</button>
+      <button class="act-btn ${done?'done':''}" onclick="event.stopPropagation();quickDone('${d.id}')">${done?'✓ Done':'✓ Done'}</button>
+    </div>
+  </div>`;
+}
+
+function renderNav(){
+  return `<div class="bottomnav">
+    <button class="navbtn ${VIEW.screen==='home'?'active':''}" onclick="goHome()"><span class="ic">🎯</span>Discover</button>
+    <button class="navbtn ${VIEW.screen==='ourdates'?'active':''}" onclick="goOurDates()"><span class="ic">❤️</span>Our Dates</button>
+    <button class="navbtn ${VIEW.screen==='roulette'?'active':''}" onclick="goRoulette()"><span class="ic">🎰</span>Roulette</button>
+  </div>`;
+}
+
+function renderHome(){
+  const doneCount = STATE.done.length;
+  return `<div class="topbar"><h1>What are we doing?</h1><button class="pill-btn" onclick="goSearch()">🔍</button></div>
+  <div class="scr">
+    <div class="hero">
+      <h2>No idea? We'll find something for you.</h2>
+      <p>${doneCount} date${doneCount===1?'':'s'} done together so far.</p>
+      <button class="spin-cta" onclick="goRoulette()">🎰 Surprise us</button>
+    </div>
+    <p class="section-label">Or choose a vibe</p>
+    <div class="cat-grid">
+      ${Object.entries(CATS).map(([k,c])=>`<div class="cat-card" style="border-left:5px solid ${c.color}" onclick="openCategory('${k}')">
+        <div class="ic">${c.ic}</div><b>${c.label}</b><span>${c.desc}</span>
+      </div>`).join('')}
+    </div>
+    ${doneCount>=3 ? renderInsightsPreview() : ''}
+  </div>`;
+}
+
+function renderInsightsPreview(){
+  const catCounts = {};
+  STATE.done.forEach(r=>{ const dt=byId(r.id); if(dt) dt.cat.forEach(c=>catCounts[c]=(catCounts[c]||0)+1); });
+  const top = Object.entries(catCounts).sort((a,b)=>b[1]-a[1])[0];
+  const last = STATE.done[STATE.done.length-1];
+  const lastD = last && byId(last.id);
+  return `<p class="section-label">Your date life</p>
+  <div class="insight-grid">
+    <div class="insight-card"><div class="lbl">Most explored</div><div class="val">${top?CATS[top[0]].ic+' '+CATS[top[0]].label:'—'}</div></div>
+    <div class="insight-card"><div class="lbl">Last date</div><div class="val">${lastD?lastD.t:'—'}</div></div>
+  </div>`;
+}
+
+function renderCategory(){
+  const c = CATS[VIEW.category];
+  const list = STATE.dates.filter(d=>d.cat.includes(VIEW.category));
+  return `<div class="topbar"><div class="back-row"><button class="back-btn" onclick="goHome()">←</button><h1>${c.ic} ${c.label}</h1></div></div>
+  <div class="scr">
+    <p style="color:var(--muted);margin-top:0">${c.desc}</p>
+    ${list.map(dateCardHtml).join('')}
+  </div>`;
+}
+
+function renderSearch(){
+  const q = (VIEW.query||'').toLowerCase();
+  const list = q ? STATE.dates.filter(d=>d.t.toLowerCase().includes(q)||d.d.toLowerCase().includes(q)) : [];
+  return `<div class="topbar"><div class="back-row"><button class="back-btn" onclick="goHome()">←</button><h1>Search</h1></div></div>
+  <div class="scr">
+    <input class="search-box" placeholder="Search dates, e.g. pizza" value="${VIEW.query||''}" oninput="VIEW.query=this.value;render()" autofocus>
+    ${q && list.length===0 ? `<div class="empty"><b>Nothing found</b>Try a different word.</div>` : list.map(dateCardHtml).join('')}
+  </div>`;
+}
+
+function renderDetail(){
+  const d = byId(VIEW.dateId);
+  if(!d) return renderHome();
+  const rec = doneRecord(d.id);
+  const need = (d.need||'').split(',').filter(Boolean);
+  return `<div class="topbar"><div class="back-row"><button class="back-btn" onclick="goBackFromDetail()">←</button><h1 style="font-size:16px">Date details</h1></div></div>
+  <div class="scr">
+    <div class="detail-hero">
+      <h2>${d.t}${d.ai?'<span class="ai-badge">new mashup</span>':''}</h2>
+      <div class="meta">${d.cat.map(c=>CATS[c].label).join(' · ')} · ${budgetLabel(d.budget)} · ${DUR_LABEL[d.dur]}</div>
+      ${rec?`<div class="tag" style="background:var(--sage);color:#fff;border:none">✓ You already did this — ${new Date(rec.ts).toLocaleDateString()}</div>`:''}
+    </div>
+    <div class="block"><h4>What are you doing?</h4><p>${d.d}</p></div>
+    <div class="block"><h4>How it works</h4><p>${d.how}</p></div>
+    <div class="block"><h4>Make it better</h4><p>${d.tips}</p></div>
+    ${need.length?`<div class="block"><h4>What do you need?</h4><div class="need-row">${need.map(n=>`<span class="need-chip">${n.trim()}</span>`).join('')}</div></div>`:''}
+    <div class="big-actions">
+      <button class="big-btn primary" onclick="startComplete('${d.id}')">✓ We did this</button>
+      <button class="big-btn secondary" onclick="toggleSave('${d.id}');render()">${isSaved(d.id)?'♥ Saved to bucket list':'♡ Save'}</button>
+      <button class="big-btn secondary" onclick="openPlan('${d.id}')">📅 Plan this date</button>
+      <button class="big-btn secondary" onclick="spinFromDetail()">🎰 Give us another one</button>
+    </div>
+  </div>`;
+}
+
+function renderOurDates(){
+  const t = VIEW.tab;
+  const total = STATE.done.length;
+  let list = [];
+  if(t==='saved') list = STATE.saved.map(byId).filter(Boolean);
+  if(t==='planned') list = STATE.planned;
+  if(t==='done') list = [...STATE.done].reverse();
+  return `<div class="topbar"><h1>❤️ Our Dates</h1></div>
+  <div class="scr">
+    <div class="stat-big">${total} date${total===1?'':'s'} together</div>
+    <div class="tabbar">
+      <button class="tabbtn ${t==='saved'?'active':''}" onclick="VIEW.tab='saved';render()">Saved</button>
+      <button class="tabbtn ${t==='planned'?'active':''}" onclick="VIEW.tab='planned';render()">Planned</button>
+      <button class="tabbtn ${t==='done'?'active':''}" onclick="VIEW.tab='done';render()">Done</button>
+    </div>
+    ${renderOurDatesList(t,list)}
+  </div>`;
+}
+function renderOurDatesList(t,list){
+  if(list.length===0){
+    if(t==='saved') return `<div class="empty"><b>Your bucket list is empty.</b>Find something you want to try and save it here.</div>`;
+    if(t==='planned') return `<div class="empty"><b>Nothing planned yet.</b>Let the wheel choose something for you.</div>`;
+    return `<div class="empty"><b>Your date history starts here ❤️</b>Pick your first date and we'll keep track of the rest.</div>`;
+  }
+  if(t==='saved') return list.map(dateCardHtml).join('');
+  if(t==='planned') return list.map(p=>{const d=byId(p.id); return `<div class="date-card" onclick="openDetail('${p.id}')">
+    <h3>${d?d.t:'Date'}</h3><p>📅 ${p.date} · ${p.time||''}</p>
+    <div class="tags">${(d?d.cat:[]).map(catChip).join('')}</div></div>`;}).join('');
+  return list.map(r=>{const d=byId(r.id); return `<div class="date-card" onclick="openDetail('${r.id}')">
+    <h3>${d?d.t:'Date'}</h3><p>Done · ${new Date(r.ts).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}${r.rating?' · '+'★'.repeat(r.rating):''}</p>
+    ${r.note?`<p style="font-style:italic">"${r.note}"</p>`:''}
+    <div class="tags">${(d?d.cat:[]).map(catChip).join('')}</div></div>`;}).join('');
+}
+
+/* ---------- ROULETTE ---------- */
+let ROULETTE_FILTERS = {cat:null, dur:'any', budget:'any', loc:'any', status:'new'};
+let SPINNING = false, LAST_RESULT = null;
+
+function renderRoulette(){
+  if(LAST_RESULT) return renderRouletteResult();
+  const durs=[['any','Any'],['30','<30 min'],['1-2h','1–2h'],['2-4h','2–4h'],['half','Half day'],['full','Full day']];
+  const buds=[['any','Any'],['free','Free'],['€','€'],['€€','€€'],['€€€','€€€']];
+  const locs=[['any','Any'],['home','Home'],['out','Outdoors']];
+  const statuses=[['new','Only new'],['all','Include done']];
+  return `<div class="topbar"><h1>🎰 What should we do?</h1></div>
+  <div class="scr">
+    <div class="wheel-wrap">
+      <div class="wheel-outer"><div class="pointer">▼</div><div class="wheel" id="wheel"></div></div>
+      <button class="spin-cta" style="width:220px" onclick="spin()">🎰 Spin the wheel</button>
+    </div>
+    <div class="filter-row"><p class="section-label">Category</p><div class="opts">
+      <div class="opt ${!ROULETTE_FILTERS.cat?'sel':''}" onclick="setFilter('cat',null)">All dates</div>
+      ${Object.entries(CATS).map(([k,c])=>`<div class="opt ${ROULETTE_FILTERS.cat===k?'sel':''}" onclick="setFilter('cat','${k}')">${c.ic} ${c.label}</div>`).join('')}
+    </div></div>
+    <div class="filter-row"><p class="section-label">Time</p><div class="opts">${durs.map(([k,l])=>`<div class="opt ${ROULETTE_FILTERS.dur===k?'sel':''}" onclick="setFilter('dur','${k}')">${l}</div>`).join('')}</div></div>
+    <div class="filter-row"><p class="section-label">Budget</p><div class="opts">${buds.map(([k,l])=>`<div class="opt ${ROULETTE_FILTERS.budget===k?'sel':''}" onclick="setFilter('budget','${k}')">${l}</div>`).join('')}</div></div>
+    <div class="filter-row"><p class="section-label">Location</p><div class="opts">${locs.map(([k,l])=>`<div class="opt ${ROULETTE_FILTERS.loc===k?'sel':''}" onclick="setFilter('loc','${k}')">${l}</div>`).join('')}</div></div>
+    <div class="filter-row"><p class="section-label">Date status</p><div class="opts">${statuses.map(([k,l])=>`<div class="opt ${ROULETTE_FILTERS.status===k?'sel':''}" onclick="setFilter('status','${k}')">${l}</div>`).join('')}</div></div>
+  </div>`;
+}
+function setFilter(key,val){ ROULETTE_FILTERS[key]=val; render(); }
+
+function renderRouletteResult(){
+  const d = LAST_RESULT;
+  return `<div class="topbar"><div class="back-row"><button class="back-btn" onclick="LAST_RESULT=null;render()">←</button><h1 style="font-size:16px">Your result</h1></div></div>
+  <div class="scr">
+    <p style="color:var(--muted);margin:0">🎉 Your date is...</p>
+    <div class="result-title serif">${d.t}${d.ai?'<span class="ai-badge">new mashup</span>':''}</div>
+    <p style="color:var(--muted)">${d.d}</p>
+    <div class="tags">${d.cat.map(catChip).join('')}<span class="tag">${budgetLabel(d.budget)}</span><span class="tag">${DUR_LABEL[d.dur]}</span></div>
+    <div class="big-actions">
+      <button class="big-btn primary" onclick="startComplete('${d.id}')">✓ Let's do this</button>
+      <button class="big-btn secondary" onclick="toggleSave('${d.id}');render()">${isSaved(d.id)?'♥ Saved':'♡ Save'}</button>
+      <button class="big-btn secondary" onclick="rejectAndRespin('${d.id}')">🎰 Spin again</button>
+    </div>
+  </div>`;
+}
+
+function spin(){
+  if(SPINNING) return;
+  let pool = buildPool(ROULETTE_FILTERS);
+  if(pool.length<6 && Math.random()<0.5){
+    const nd = generateDate();
+    if(nd) pool = buildPool(ROULETTE_FILTERS);
+  }
+  if(pool.length===0){ toast("No dates match those filters yet — try widening them."); return; }
+  const segCount = Math.min(pool.length,8);
+  const segs = [...pool].sort(()=>Math.random()-0.5).slice(0,segCount);
+  const winner = weightedPick(pool);
+  if(!segs.includes(winner)) segs[Math.floor(Math.random()*segs.length)] = winner;
+  const winIdx = segs.indexOf(winner);
+  const wheelEl = document.getElementById('wheel');
+  const segAngle = 360/segs.length;
+  const colors = ['#4B7FA6','#A23E5D','#5C8B6E','#E4694A','#8A5FBE','#F2A93B','#2E1A3D','#8A7A92'];
+  let grad = segs.map((s,i)=>`${colors[i%colors.length]} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(',');
+  wheelEl.style.background = `conic-gradient(${grad})`;
+  wheelEl.innerHTML = segs.map((s,i)=>`<div class="wheel-seg-label" style="transform:rotate(${i*segAngle+segAngle/2}deg)">${s.t.split(' ').slice(0,2).join(' ')}</div>`).join('');
+  SPINNING = true;
+  const targetCenter = winIdx*segAngle + segAngle/2;
+  const spins = 5*360;
+  const rotation = spins + (360 - targetCenter) + (Math.random()*10-5);
+  wheelEl.style.transition='none'; wheelEl.style.transform='rotate(0deg)';
+  requestAnimationFrame(()=>{
+    wheelEl.style.transition='transform 4.2s cubic-bezier(.12,.72,.14,1)';
+    wheelEl.style.transform=`rotate(${rotation}deg)`;
+  });
+  setTimeout(()=>{ SPINNING=false; LAST_RESULT=winner; render(); }, 4300);
+}
+function rejectAndRespin(id){ STATE.rejected[id]=(STATE.rejected[id]||0)+1; saveState(); LAST_RESULT=null; render(); setTimeout(spin,150); }
+function spinFromDetail(){ VIEW.screen='roulette'; LAST_RESULT=null; render(); }
+
+/* ---------- ACTIONS ---------- */
+function goHome(){ VIEW.screen='home'; render(); }
+function goOurDates(){ VIEW.screen='ourdates'; render(); }
+function goRoulette(){ VIEW.screen='roulette'; LAST_RESULT=null; render(); }
+function goSearch(){ VIEW.screen='search'; VIEW.query=''; render(); }
+function openCategory(k){ VIEW.screen='category'; VIEW.category=k; render(); }
+function openDetail(id){ VIEW.prevScreen=VIEW.screen; VIEW.screen='detail'; VIEW.dateId=id; render(); }
+function goBackFromDetail(){ VIEW.screen = VIEW.prevScreen || 'home'; render(); }
+function toggleSave(id){
+  if(isSaved(id)){ STATE.saved = STATE.saved.filter(x=>x!==id); toast('Removed from bucket list'); }
+  else { STATE.saved.push(id); toast('Saved to your bucket list'); }
+  saveState(); render();
+}
+function quickDone(id){
+  if(doneRecord(id)) return;
+  STATE.done.push({id, ts:Date.now()});
+  const d = byId(id); if(d) d.timesDone++;
+  saveState(); toast('Nice! Marked as done ❤️'); render();
+}
+function openPlan(id){
+  const date = prompt("Plan for which date? (YYYY-MM-DD)", new Date().toISOString().slice(0,10));
+  if(!date) return;
+  const time = prompt("What time? (optional)", "19:30") || '';
+  STATE.planned.push({id, date, time});
+  saveState(); toast('Added to your planned dates'); render();
+}
+
+let COMPLETE_ID=null, COMPLETE_RATING=0;
+function startComplete(id){
+  COMPLETE_ID=id; COMPLETE_RATING=0;
+  const d = byId(id);
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(36,18,39,.55);z-index:50;display:flex;align-items:flex-end';
+  overlay.innerHTML = `<div style="background:var(--cream);width:100%;max-width:520px;margin:0 auto;border-radius:24px 24px 0 0;padding:26px 22px calc(26px + env(safe-area-inset-bottom,0px))">
+    <h2 style="margin:0 0 4px">Date complete? ❤️</h2>
+    <p style="color:var(--muted);margin:0 0 14px">${d.t}</p>
+    <p class="section-label">How was it?</p>
+    <div class="hearts" id="heartsRow">${[1,2,3,4,5].map(n=>`<span onclick="setRating(${n})" data-n="${n}">❤</span>`).join('')}</div>
+    <p class="section-label">Add a memory (optional)</p>
+    <div class="mem-form"><textarea id="memNote" placeholder="How did it go?"></textarea></div>
+    <div class="big-actions">
+      <button class="big-btn primary" onclick="finishComplete()">Done</button>
+      <button class="big-btn secondary" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function setRating(n){ COMPLETE_RATING=n; document.querySelectorAll('#heartsRow span').forEach(s=>s.classList.toggle('on', +s.dataset.n<=n)); }
+function finishComplete(){
+  const note = document.getElementById('memNote').value.trim();
+  const id = COMPLETE_ID;
+  if(!doneRecord(id)){
+    STATE.done.push({id, ts:Date.now(), rating:COMPLETE_RATING||undefined, note: note||undefined});
+    const d = byId(id); if(d) d.timesDone++;
+  } else {
+    const rec = doneRecord(id); rec.rating=COMPLETE_RATING||rec.rating; rec.note=note||rec.note;
+  }
+  STATE.saved = STATE.saved.filter(x=>x!==id);
+  saveState();
+  document.querySelectorAll('div[style*="position:fixed"]').forEach(e=>e.remove());
+  LAST_RESULT=null;
+  toast('Logged that date ❤️');
+  goOurDates(); VIEW.tab='done'; render();
+}
+
+render();
+</script>
+</body>
+</html>
